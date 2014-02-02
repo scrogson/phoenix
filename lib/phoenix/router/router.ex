@@ -3,13 +3,14 @@ defmodule Phoenix.Router do
   alias Phoenix.Request
   alias Phoenix.Dispatcher
   alias Phoenix.Controller
+  alias Phoenix.Router.Adapters.Cowboy
 
-  defmacro __using__(plug_adapter_options // []) do
+  defmacro __using__(plug_options // []) do
     quote do
       use Phoenix.Router.Mapper
       import unquote(__MODULE__)
 
-      @options unquote(plug_adapter_options)
+      @options Cowboy.normalize_options(unquote(plug_options), __MODULE__)
 
       def start do
         IO.puts "Running #{__MODULE__} with Cowboy with #{inspect @options}"
