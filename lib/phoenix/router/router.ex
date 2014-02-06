@@ -2,10 +2,13 @@ defmodule Phoenix.Router do
   use GenServer.Behaviour
   alias Phoenix.Dispatcher
   alias Phoenix.Controller
+  alias Phoenix.Router.Path
+  alias Phoenix.Plug.Middleware
 
   defmacro __using__(plug_adapter_options // []) do
     quote do
       use Phoenix.Router.Mapper
+      use Phoenix.Plug.Pluggable
       import unquote(__MODULE__)
 
       @options unquote(plug_adapter_options)
@@ -16,23 +19,22 @@ defmodule Phoenix.Router do
       end
 
       def call(conn, []) do
-        alias Phoenix.Router.Path
-        conn        = Plug.Connection.fetch_params(conn)
-        http_method = conn.method |> String.downcase |> binary_to_atom
-        split_path  = Path.split_from_conn(conn)
-        params      = conn.params
-
-        IO.puts "#{__MODULE__}: #{http_method}: #{inspect split_path}"
-        dispatch(conn, __MODULE__, http_method, split_path)
+        Phoenix.Router.dispatch(conn, __MODULE__)
       end
     end
   end
 
-  def dispatch(conn, router, http_method, path) do
+  def dispatch(conn, router) do
+    conn        = Plug.Connection.fetch_params(conn)
+    http_method = conn.method |> String.downcase |> binary_to_atom
+    split_path  = Path.split_from_conn(conn)
+    params      = conn.params
+    conn        = Middleware.apply_plugs(router.plugs, conn)
+
     request = Dispatcher.Request.new(conn: conn,
                                      router: router,
                                      http_method: http_method,
-                                     path: path)
+                                     path: split_path)
 
     {:ok, pid} = Dispatcher.Client.start(request)
     case Dispatcher.Client.dispatch(pid) do
@@ -41,5 +43,4 @@ defmodule Phoenix.Router do
     end
   end
 end
-
 

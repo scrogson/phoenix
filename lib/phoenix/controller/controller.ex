@@ -3,6 +3,7 @@ defmodule Phoenix.Controller do
 
   defmacro __using__(_options) do
     quote do
+      use Phoenix.Plug.Pluggable
       import Plug.Connection
       import unquote(__MODULE__)
     end
