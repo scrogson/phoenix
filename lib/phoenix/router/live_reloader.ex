@@ -41,13 +41,15 @@ defmodule Phoenix.Router.LiveReload do
     url = Path.join((config[:url] || "/"), "phoenix")
     """
     <script>
-      #{@phoenix_js}
-      var phx = require("phoenix")
-      var socket = new phx.Socket("#{url}")
-      socket.connect()
-      socket.join("phoenix", {}, function(chan){
-        chan.on("assets:change", function(msg){ window.location.reload(); })
-      })
+      (function() {
+        #{@phoenix_js}
+        var Phoenix = require("phoenix")
+        var socket = new Phoenix.Socket("#{url}")
+        socket.connect()
+        socket.join("phoenix", {}, function(chan){
+          chan.on("assets:change", function(msg){ window.location.reload(); })
+        })
+      })()
     </script>
     """
   end
